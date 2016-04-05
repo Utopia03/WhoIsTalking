@@ -1,4 +1,6 @@
 import pyaudio, wave, struct, math
+import matplotlib.pyplot as plt
+import numpy as np
 
 SHORT_NORMALIZE = (1.0 / 32768.0)
 
@@ -50,3 +52,9 @@ p.terminate()
 
 for amplitude in frames:
     print(amplitude)
+
+t = np.linspace(0,len(frames),len(frames))
+plt.plot(t,frames)  # on utilise la fonction sinus de Numpy
+plt.ylabel('t')
+plt.xlabel('amplitude')
+plt.show()
