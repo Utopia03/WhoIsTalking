@@ -55,6 +55,6 @@ for amplitude in frames:
 
 t = np.linspace(0,len(frames),len(frames))
 plt.plot(t,frames)  # on utilise la fonction sinus de Numpy
-plt.ylabel('t')
+plt.ylabel('time')
 plt.xlabel('amplitude')
 plt.show()
