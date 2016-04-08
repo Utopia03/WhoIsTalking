@@ -4,6 +4,8 @@
 from pocketsphinx import *
 from threading import Thread
 import pyaudio, sys, wave, time, commands, os, struct, math
+import matplotlib.pyplot as plt
+import numpy as np
 
 hmm = '/usr/local/share/pocketsphinx/model/en-us/en-us'
 dic = '/usr/local/share/pocketsphinx/model/en-us/6892.dic'
@@ -111,6 +113,7 @@ class ActionsPerMic(Thread):
 		for command in list :
 			print command.name, " at ", command.time, " seconds"
 
+		#  record a .wav file
 		wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
 		wf.setnchannels(CHANNELS)
 		wf.setsampwidth(p.get_sample_size(FORMAT))
@@ -119,6 +122,13 @@ class ActionsPerMic(Thread):
 		wf.close()
 
 		p.terminate()
+
+		# plot a figure with amplitude over time
+		t = np.linspace(0, len(framesConverted), len(framesConverted))
+		plt.plot(t, framesConverted)
+		plt.ylabel('amplitude')
+		plt.xlabel('time')
+		plt.show()
 
 # we start the timer
 t0 = time.time()
