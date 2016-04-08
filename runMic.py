@@ -3,7 +3,7 @@
 
 from pocketsphinx import *
 from threading import Thread
-import pyaudio, sys, wave, time, commands, os
+import pyaudio, sys, wave, time, commands, os, struct, math
 
 hmm = '/usr/local/share/pocketsphinx/model/en-us/en-us'
 dic = '/usr/local/share/pocketsphinx/model/en-us/6892.dic'
@@ -15,29 +15,47 @@ config.set_string('-lm', lm)
 config.set_string('-dict', dic)
 config.set_string('-logfn', '/dev/null')
 
-# mots clés de début et de fin
+# key words for start and end
 start = "OPEN"
 end = "LIGHT"
 
-list = [] # liste d'objets de type "Command"
+SHORT_NORMALIZE = (1.0 / 32768.0)
+
+list = [] # list of objects of type "Command"
+frames = []
+framesConverted = []
 
 index = 0
 delay = 0
 
-# classe qui stocke le texte d'une commande et le temps où elle a fini d'être dite
+CHUNK = 2048
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 11025
+RECORD_SECONDS = 15
+WAVE_OUTPUT_FILENAME = time.strftime('%Y-%m-%d-mic -listen-%H-%M-%S.wav')
+
+def get_rms(block):
+    count = len(block) / 2
+    format = "%dh" % (count)
+    shorts = struct.unpack(format, block)
+
+    # iterate over the block.
+    sum_squares = 0.0
+    for sample in shorts:
+        # sample is a signed short in +/- 32768.
+        # normalize it to 1.0
+        n = sample * SHORT_NORMALIZE
+        sum_squares += n * n
+
+    return math.sqrt(sum_squares / count)
+
+# class which save the text of a command and the time when it is finished
 class Command:
 	def __init__(self):
 		self.text = ""
 		self.time = 0
-
-# classe qui permet d'exécuter un second Thread qui va enregistrer en même temps
-class Record(Thread):
-	def __init__(self, device):
-		super(Record, self).__init__()
-		self.device = device
-	def run(self):
-		# permet d'enregistrer en spécifiant le / les bons micros, et enregistre un fichier à la bonne date et heure, en spécifiant le numéro du micro
-		u = commands.getoutput('arecord -D plughw:' + str(self.device) + ',0 -f cd -t wav -d 10 --use-strftime %Y/%m/%d/mic' + str(self.device) + '-listen-%H-%M-%v.wav')
+		self.amplitude = 0.00
 
 class ActionsPerMic(Thread):
 	def __init__(self, device):
@@ -49,32 +67,38 @@ class ActionsPerMic(Thread):
 		global index
 		decoder = Decoder(config)
 		p = pyaudio.PyAudio()
-		stream = p.open(format=pyaudio.paInt16, channels=1, rate=22050, input=True, frames_per_buffer=4096, input_device_index = int(self.device))
+
+		stream = p.open(format = FORMAT,
+		                channels = CHANNELS,
+		                rate = RATE,
+		                input = True,
+		                frames_per_buffer = CHUNK,
+		                input_device_index = int(self.device))
+
 		stream.start_stream()
 		decoder.start_utt()
 
-		# rec = Record(self.device)
-		# rec.start()
-
-		# on fait l'action que pendant 60 secondes soit une minute
-		print "temps " + str(time.time())
-		while delay < 15 :
-			buf = stream.read(4096)
-			if buf:
-				decoder.process_raw(buf, False, False)
+		# we launch the program only for 60 seconds i.e. one minute
+		while delay < RECORD_SECONDS :
+			# calculation of amplitude
+			data = stream.read(CHUNK)
+			frames.append(data)
+			amplitude = get_rms(data)
+			framesConverted.append(amplitude)
+			print(amplitude)
+			if data:
+				decoder.process_raw(data, False, False)
 				try:
 					if decoder.hyp().hypstr != '':
-						print "Hearing : ", decoder.hyp().hypstr
+						# print "Hearing : ", decoder.hyp().hypstr
 						remaining = decoder.hyp().hypstr[index:]
 						delay = time.time() - t0
-						# print "index : ", index
-						# print "remaining : ", remaining
 						if start in remaining:
 							if end in remaining:
 								command = Command()
 								command.name = remaining.split(start)[1].split(end)[0]
 								command.time = time.time() - t0
-								print "Between " + start + " and : " + end, command.name
+								# print "Between " + start + " and " + end + " : ", command.name
 								list.append(command)
 								index = len(decoder.hyp().hypstr)
 				except AttributeError:
@@ -84,16 +108,22 @@ class ActionsPerMic(Thread):
 
 		decoder.end_utt()
 
-		print 'Time out'
 		for command in list :
 			print command.name, " at ", command.time, " seconds"
 
-		# rec.join()
+		wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+		wf.setnchannels(CHANNELS)
+		wf.setsampwidth(p.get_sample_size(FORMAT))
+		wf.setframerate(RATE)
+		wf.writeframes(b''.join(frames))
+		wf.close()
 
-# on démarre le timer
+		p.terminate()
+
+# we start the timer
 t0 = time.time()
 
-# pour un micro branché au Raspberry Pi
+# for each mic connected
 mic = ActionsPerMic(sys.argv[1])
 mic.start()
 mic.join()
