@@ -1,13 +1,32 @@
 # #!/usr/bin/env python2
 # # -*-coding:Latin-1 -*
 
-import subprocess, pyaudio, multiprocessing.pool
+import commands, time, subprocess, signal, os, pyaudio, sys, wave, multiprocessing.pool
 from subprocess import Popen
 
 listDevices = list()
 p = pyaudio.PyAudio()
 
-# class useful for save all commands
+# recover the ouput string from runMic.py and save all commands in "Command" classes
+def output_to_command(string):
+	numberEntries = string.count("new")
+	string = string.split("-")
+
+	for i in xrange(numberEntries):
+		command = Command()
+		command.mic = string[5 * i + 1]
+		command.text = string[5 * i + 2]
+		command.time = string[5 * i + 3]
+		command.amplitude = string[5 * i + 4]
+		commands.append(command)
+
+	for command in commands :
+		print(command.mic)
+		print(command.text)
+		print(command.time)
+		print(command.amplitude)
+
+# class which save the text of a command and the time when it is finished
 class Command:
 	def __init__(self):
 		self.mic = 0
@@ -31,7 +50,6 @@ for i in range(max_devs):
 numberDevices = len(listDevices)
 
 processes = []
-
 pool = multiprocessing.pool.ThreadPool(numberDevices)
 for dev in listDevices :
 	processes.append(lambda dev=dev: subprocess.check_output((["python", "runMic.py", str(dev)])))
@@ -39,6 +57,6 @@ for dev in listDevices :
 outputs = pool.map(lambda x: x(), processes)
 
 for o in outputs :
-	print o
+	output_to_command(o)
 
 p.terminate()
