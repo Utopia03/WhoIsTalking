@@ -7,6 +7,7 @@ import pyaudio, sys, wave, time, commands, os, struct, math
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 hmm = '/usr/local/share/pocketsphinx/model/en-us/en-us'
 dic = '/usr/local/share/pocketsphinx/model/en-us/6892.dic'
 lm = '/usr/local/share/pocketsphinx/model/en-us/6892.lm'
@@ -55,6 +56,7 @@ def get_rms(block):
 # class which save the text of a command and the time when it is finished
 class Command:
 	def __init__(self):
+		self.mic = 0
 		self.text = ""
 		self.time = 0
 		self.amplitude = 0.00
@@ -98,9 +100,10 @@ class ActionsPerMic(Thread):
 						if start in remaining:
 							if end in remaining:
 								command = Command()
-								command.name = remaining.split(start)[1].split(end)[0]
+								command.mic = int(self.device)
+								command.text = remaining.split(start)[1].split(end)[0]
 								command.time = time.time() - t0
-								# print "Between " + start + " and " + end + " : ", command.name
+								# print "Between " + start + " and " + end + " : ", command.text
 								list.append(command)
 								index = len(decoder.hyp().hypstr)
 				except AttributeError:
@@ -111,9 +114,9 @@ class ActionsPerMic(Thread):
 		decoder.end_utt()
 
 		for command in list :
-			print command.name, " at ", command.time, " seconds"
+			print("mic : " + command.mic + " - text : " + command.text + " - time : " + command.time + " - amplitude : " + command.amplitude)
 
-		#  record a .wav file
+		# record a .wav file
 		wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
 		wf.setnchannels(CHANNELS)
 		wf.setsampwidth(p.get_sample_size(FORMAT))
@@ -124,8 +127,8 @@ class ActionsPerMic(Thread):
 		p.terminate()
 
 		# plot a figure with amplitude over time
-		t = np.linspace(0, len(framesConverted), len(framesConverted))
-		plt.plot(t, framesConverted)
+		t = np.linspace(0,len(framesConverted),len(framesConverted))
+		plt.plot(t,framesConverted)
 		plt.ylabel('amplitude')
 		plt.xlabel('time')
 		plt.show()
