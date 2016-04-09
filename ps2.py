@@ -7,6 +7,14 @@ from subprocess import Popen
 listDevices = list()
 p = pyaudio.PyAudio()
 
+# class which save the text of a command and the time when it is finished
+class Command:
+	def __init__(self):
+		self.mic = 0
+		self.text = ""
+		self.time = 0
+		self.amplitude = 0.00
+
 # détecte les index des micros connectés
 max_apis = p.get_host_api_count()
 max_devs = p.get_device_count()
