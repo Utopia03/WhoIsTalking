@@ -7,7 +7,7 @@ from subprocess import Popen
 listDevices = list()
 p = pyaudio.PyAudio()
 
-# class which save the text of a command and the time when it is finished
+# class useful for save all commands
 class Command:
 	def __init__(self):
 		self.mic = 0
