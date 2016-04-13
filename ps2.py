@@ -50,6 +50,8 @@ for i in range(max_devs):
 numberDevices = len(listDevices)
 
 processes = []
+lastCommands = []
+commands = []
 pool = multiprocessing.pool.ThreadPool(numberDevices)
 for dev in listDevices :
 	processes.append(lambda dev=dev: subprocess.check_output((["python", "runMic.py", str(dev)])))
@@ -58,5 +60,23 @@ outputs = pool.map(lambda x: x(), processes)
 
 for o in outputs :
 	output_to_command(o)
+
+	commands.sort(key=lambda x: x.time)
+
+	# permits to determine where the command has been said the higher
+	for mainCommand in commands:
+		mainCommand.treated = True
+		for command in commands:
+			if command.treated == False:
+				if command.time >= mainCommand.time - 0.5 and command.time <= mainCommand.time + 0.5:
+					if mainCommand.amplitude > command.amplitude:
+						lastCommands.append(mainCommand)
+						command.treated = True
+				else:
+					lastCommands.append(command)
+					command.treated = True
+
+	for command in lastCommands:
+		print command.time
 
 p.terminate()
