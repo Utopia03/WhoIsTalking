@@ -33,6 +33,7 @@ class Command:
 		self.text = ""
 		self.time = 0
 		self.amplitude = 0.00
+		self.treated = False
 
 # détecte les index des micros connectés
 max_apis = p.get_host_api_count()
@@ -61,22 +62,24 @@ outputs = pool.map(lambda x: x(), processes)
 for o in outputs :
 	output_to_command(o)
 
-	commands.sort(key=lambda x: x.time)
+commands.sort(key=lambda x: x.time)
 
-	# permits to determine where the command has been said the higher
-	for mainCommand in commands:
-		mainCommand.treated = True
-		for command in commands:
-			if command.treated == False:
-				if command.time >= mainCommand.time - 0.5 and command.time <= mainCommand.time + 0.5:
-					if mainCommand.amplitude > command.amplitude:
-						lastCommands.append(mainCommand)
-						command.treated = True
-				else:
-					lastCommands.append(command)
-					command.treated = True
+# permits to determine where the command has been said the higher
+for i in range(0, len(commands)):
+	for j in range(i + 1, len(commands)):
+		if i != j:
+			if commands[j].time >= commands[i].time - 0.5 and commands[j].time <= commands[i].time + 0.5:
+				if commands[i].amplitude > commands[j].amplitude:
+					lastCommands.append(commands[i])
+				if commands[j].amplitude >= commands[i].amplitude:
+					lastCommands.append(commands[j])
+				commands[i].treated = True
+				commands[j].treated = True
+		if i != j and commands[i].treated == False:
+			lastCommands.append(commands[i])
+			commands[i].treated = True
 
-	for command in lastCommands:
-		print command.time
+for command in lastCommands:
+	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
 
 p.terminate()
