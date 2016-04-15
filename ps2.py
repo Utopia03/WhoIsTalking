@@ -67,15 +67,14 @@ commands.sort(key=lambda x: x.time)
 # permits to determine where the command has been said the higher
 for i in range(0, len(commands)):
 	for j in range(i + 1, len(commands)):
-		if i != j:
-			if commands[j].time >= commands[i].time - 0.5 and commands[j].time <= commands[i].time + 0.5:
-				if commands[i].amplitude > commands[j].amplitude:
-					lastCommands.append(commands[i])
-				if commands[j].amplitude >= commands[i].amplitude:
-					lastCommands.append(commands[j])
-				commands[i].treated = True
-				commands[j].treated = True
-		if i != j and commands[i].treated == False:
+		if commands[j].time >= commands[i].time - 0.5 and commands[j].time <= commands[i].time + 0.5:
+			if commands[i].amplitude > commands[j].amplitude:
+				lastCommands.append(commands[i])
+			if commands[j].amplitude >= commands[i].amplitude:
+				lastCommands.append(commands[j])
+			commands[i].treated = True
+			commands[j].treated = True
+		if commands[i].treated == False:
 			lastCommands.append(commands[i])
 			commands[i].treated = True
 
