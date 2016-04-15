@@ -103,6 +103,7 @@ class ActionsPerMic(Thread):
 								command.mic = int(self.device)
 								command.text = remaining.split(start)[1].split(end)[0]
 								command.time = time.time() - t0
+								command.amplitude = sum(framesConverted[RATE / CHUNK * (command.time - 3): RATE / CHUNK * command.time])
 								# print "Between " + start + " and " + end + " : ", command.text
 								list.append(command)
 								index = len(decoder.hyp().hypstr)

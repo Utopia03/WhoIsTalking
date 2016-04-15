@@ -35,14 +35,14 @@ class Command:
 		self.amplitude = 0.00
 		self.treated = False
 
-# détecte les index des micros connectés
+# detect the indices of connected mics
 max_apis = p.get_host_api_count()
 max_devs = p.get_device_count()
 
 for i in range(max_devs):
 	devinfo = p.get_device_info_by_index(i)
 
-	# récupère les indices des micros Samson connectés
+	# recover the indices of Samson connected mics
 	for k in list(devinfo.items()):
 		name, value = k
 		if name == 'name' and 'Samson' in value :
