@@ -115,7 +115,7 @@ class ActionsPerMic(Thread):
 		decoder.end_utt()
 
 		for command in list :
-			print("new-" + command.mic + "-" + command.text + "-" + command.time + "-" + command.amplitude)
+			print("new-" + command.mic + "-" + command.text + "-" + command.time + "-" + command.amplitude + "-")
 
 		# record a .wav file
 		wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
