@@ -3,7 +3,7 @@
 
 from pocketsphinx import *
 from threading import Thread
-import pyaudio, sys, wave, time, commands, os, struct, math
+import pyaudio, sys, wave, time, struct, math
 import matplotlib.pyplot as plt
 import numpy as np
 
