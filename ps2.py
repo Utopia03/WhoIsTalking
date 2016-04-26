@@ -1,8 +1,8 @@
 # #!/usr/bin/env python2
 # # -*-coding:Latin-1 -*
 
-import commands, time, subprocess, signal, os, pyaudio, sys, wave, multiprocessing.pool
-from subprocess import Popen
+import commands, subprocess, pyaudio, multiprocessing.pool, pymongo
+from pymongo import MongoClient
 
 listDevices = list()
 p = pyaudio.PyAudio()
@@ -36,7 +36,6 @@ class Command:
 		self.treated = False
 
 # detect the indices of connected mics
-max_apis = p.get_host_api_count()
 max_devs = p.get_device_count()
 
 for i in range(max_devs):
@@ -62,6 +61,9 @@ outputs = pool.map(lambda x: x(), processes)
 for o in outputs :
 	output_to_command(o)
 
+for command in commands:
+	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
+
 commands.sort(key=lambda x: x.time)
 
 # permits to determine where the command has been said the higher
@@ -82,3 +84,24 @@ for command in lastCommands:
 	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
 
 p.terminate()
+
+# create the connection with MongoLab
+connection = pymongo.MongoClient('ds059185.mlab.com', 59185)
+
+# get the database
+db = connection['audiomanager_db']
+db.authenticate('admin', 'admin')
+
+# create a history document
+for command in lastCommands:
+	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
+	result = db.history.insert_one(
+	   {
+		"username": "Agathe",
+		"micro" : command.mic,
+		"text" : command.text
+	   }
+	)
+
+# close the connection to MongoDB
+connection.close()

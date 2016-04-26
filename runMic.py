@@ -139,5 +139,6 @@ t0 = time.time()
 
 # for each mic connected
 mic = ActionsPerMic(sys.argv[1])
+
 mic.start()
 mic.join()
