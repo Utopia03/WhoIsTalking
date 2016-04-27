@@ -14,10 +14,10 @@ def output_to_command(string):
 
 	for i in xrange(numberEntries):
 		command = Command()
-		command.mic = string[5 * i + 1]
+		command.mic = int(string[5 * i + 1])
 		command.text = string[5 * i + 2]
-		command.time = string[5 * i + 3]
-		command.amplitude = string[5 * i + 4]
+		command.time = float(string[5 * i + 3])
+		command.amplitude = float(string[5 * i + 4])
 		commands.append(command)
 
 	for command in commands :
