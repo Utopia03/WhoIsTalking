@@ -80,6 +80,10 @@ for i in range(0, len(commands)):
 			lastCommands.append(commands[i])
 			commands[i].treated = True
 
+for i in range(0, len(commands)):
+	if commands[i].treated == False:
+		lastCommands.append(commands[i])
+
 for command in lastCommands:
 	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
 
