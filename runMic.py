@@ -103,7 +103,7 @@ class ActionsPerMic(Thread):
 								command.mic = int(self.device)
 								command.text = remaining.split(start)[1].split(end)[0]
 								command.time = time.time() - t0
-								command.amplitude = sum(framesConverted[RATE / CHUNK * (command.time - 3): RATE / CHUNK * command.time])
+								command.amplitude = sum(framesConverted[int(RATE / CHUNK * (command.time - 3)): int(RATE / CHUNK * command.time)])
 								# print "Between " + start + " and " + end + " : ", command.text
 								list.append(command)
 								index = len(decoder.hyp().hypstr)
@@ -115,7 +115,7 @@ class ActionsPerMic(Thread):
 		decoder.end_utt()
 
 		for command in list :
-			print("new-" + command.mic + "-" + command.text + "-" + command.time + "-" + command.amplitude + "-")
+			print("new-" + str(command.mic) + "-" + command.text + "-" + str(command.time) + "-" + str(command.amplitude) + "-")
 
 		# record a .wav file
 		wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
