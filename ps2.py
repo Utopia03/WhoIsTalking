@@ -20,12 +20,6 @@ def output_to_command(string):
 		command.amplitude = float(string[5 * i + 4])
 		commands.append(command)
 
-	for command in commands :
-		print(command.mic)
-		print(command.text)
-		print(command.time)
-		print(command.amplitude)
-
 # class which save the text of a command and the time when it is finished
 class Command:
 	def __init__(self):
@@ -35,19 +29,52 @@ class Command:
 		self.amplitude = 0.00
 		self.treated = False
 
-# detect the indices of connected mics
+# create the connection with MongoLab
+connection = pymongo.MongoClient('ds059185.mlab.com', 59185)
+
+# get the database
+db = connection['audiomanager_db']
+db.authenticate('thibault', 'ISEN')
+
+# detect the indices of the connected micros
 max_devs = p.get_device_count()
 
 for i in range(max_devs):
 	devinfo = p.get_device_info_by_index(i)
 
-	# recover the indices of Samson connected mics
+	# récupère les indices des micros Samson connectés
 	for k in list(devinfo.items()):
 		name, value = k
 		if name == 'name' and 'Samson' in value :
 			listDevices.append(i)
 
 numberDevices = len(listDevices)
+
+index1 = 0
+index2 = 0
+
+if (numberDevices > 0) :
+	index1 = listDevices(0)
+if (numberDevices > 1) :
+	index2 = listDevices(1)
+
+result = db.micros.update_one(
+    {"_id": "Micro 1"},
+    {
+        "$set": {
+            "index": index1
+        }
+    }
+)
+
+result = db.micros.update_one(
+    {"_id": "Micro 2"},
+    {
+        "$set": {
+            "index": index2
+        }
+    }
+)
 
 processes = []
 lastCommands = []
@@ -56,13 +83,12 @@ pool = multiprocessing.pool.ThreadPool(numberDevices)
 for dev in listDevices :
 	processes.append(lambda dev=dev: subprocess.check_output((["python", "runMic.py", str(dev)])))
 
+print("processes : " + str(len(processes)))
 outputs = pool.map(lambda x: x(), processes)
 
 for o in outputs :
+	print(o)
 	output_to_command(o)
-
-for command in commands:
-	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
 
 commands.sort(key=lambda x: x.time)
 
@@ -80,32 +106,26 @@ for i in range(0, len(commands)):
 			lastCommands.append(commands[i])
 			commands[i].treated = True
 
-for i in range(0, len(commands)):
-	if commands[i].treated == False:
-		lastCommands.append(commands[i])
-
 for command in lastCommands:
 	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
+
 
 p.terminate()
 
-# create the connection with MongoLab
-connection = pymongo.MongoClient('ds059185.mlab.com', 59185)
-
-# get the database
-db = connection['audiomanager_db']
-db.authenticate('admin', 'admin')
-
 # create a history document
+micros = db.micros.find()
+
 for command in lastCommands:
 	print(command.text + " has been said at " + str(command.time) + " seconds" + " in micro " + str(command.mic))
-	result = db.history.insert_one(
-	   {
-		"username": "Agathe",
-		"micro" : command.mic,
-		"text" : command.text
-	   }
-	)
+	for micro in micros:
+	   if micro['index'] == command.mic :
+		result = db.history.insert_one(
+	           {
+		      "username": "Agathe",
+		      "location" : micro['location'],
+		      "request" : command.text
+	           }
+		)
 
 # close the connection to MongoDB
 connection.close()

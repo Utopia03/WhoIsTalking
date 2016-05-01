@@ -3,7 +3,7 @@
 
 from pocketsphinx import *
 from threading import Thread
-import pyaudio, sys, wave, time, struct, math
+import pyaudio, sys, wave, time, commands, os, struct, math
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -19,8 +19,8 @@ config.set_string('-dict', dic)
 config.set_string('-logfn', '/dev/null')
 
 # key words for start and end
-start = "OPEN"
-end = "LIGHT"
+start = "BOB"
+end = "FINISH"
 
 SHORT_NORMALIZE = (1.0 / 32768.0)
 
@@ -35,10 +35,14 @@ CHUNK = 2048
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 11025
-RECORD_SECONDS = 15
+RECORD_SECONDS = 25
 WAVE_OUTPUT_FILENAME = time.strftime('%Y-%m-%d-mic -listen-%H-%M-%S.wav')
 
 def get_rms(block):
+	# RMS amplitude is defined as the square root of the mean over time of the square of the amplitude.
+    # so we need to convert this string of bytes into a string of 16-bit samples
+
+    # we will get one short out for each two chars in the string
     count = len(block) / 2
     format = "%dh" % (count)
     shorts = struct.unpack(format, block)
@@ -82,14 +86,13 @@ class ActionsPerMic(Thread):
 		stream.start_stream()
 		decoder.start_utt()
 
-		# we launch the program only for 60 seconds i.e. one minute
+		# we launch the program onylhaa for 60 seconds i.e. one minute
 		while delay < RECORD_SECONDS :
 			# calculation of amplitude
 			data = stream.read(CHUNK)
 			frames.append(data)
 			amplitude = get_rms(data)
 			framesConverted.append(amplitude)
-			print(amplitude)
 			if data:
 				decoder.process_raw(data, False, False)
 				try:
@@ -103,7 +106,7 @@ class ActionsPerMic(Thread):
 								command.mic = int(self.device)
 								command.text = remaining.split(start)[1].split(end)[0]
 								command.time = time.time() - t0
-								command.amplitude = sum(framesConverted[int(RATE / CHUNK * (command.time - 3)): int(RATE / CHUNK * command.time)])
+								command.amplitude = sum(framesConverted[int(RATE / CHUNK * (command.time - 3)) : int(RATE / CHUNK * command.time)])
 								# print "Between " + start + " and " + end + " : ", command.text
 								list.append(command)
 								index = len(decoder.hyp().hypstr)
@@ -117,8 +120,7 @@ class ActionsPerMic(Thread):
 		for command in list :
 			print("new-" + str(command.mic) + "-" + command.text + "-" + str(command.time) + "-" + str(command.amplitude) + "-")
 
-		# record a .wav file
-		wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+ 		wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
 		wf.setnchannels(CHANNELS)
 		wf.setsampwidth(p.get_sample_size(FORMAT))
 		wf.setframerate(RATE)
@@ -127,18 +129,17 @@ class ActionsPerMic(Thread):
 
 		p.terminate()
 
-		# plot a figure with amplitude over time
-		t = np.linspace(0,len(framesConverted),len(framesConverted))
-		plt.plot(t,framesConverted)
-		plt.ylabel('amplitude')
-		plt.xlabel('time')
-		plt.show()
+		# # plot a figure with amplitude over time
+		# t = np.linspace(0,len(framesConverted),len(framesConverted))
+		# plt.plot(t,framesConverted)
+		# plt.ylabel('amplitude')
+		# plt.xlabel('time')
+		# plt.show()
 
 # we start the timer
 t0 = time.time()
 
 # for each mic connected
 mic = ActionsPerMic(sys.argv[1])
-
 mic.start()
 mic.join()
